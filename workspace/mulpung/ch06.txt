@@ -1,0 +1,224 @@
+﻿6.4 쿠폰 상세조회 작성
+1) dao의 couponDetail 작성
+
+module.exports.couponDetail = async function(_id){
+  var coupon = await db.coupon.aggregate([
+    {
+      $match: {
+        _id: ObjectId(_id)
+      }
+    }, {
+      // shop 조인
+      $lookup: {
+        from: 'shop',
+        localField: 'shopId',
+        foreignField: '_id',
+        as: 'shop'
+      }
+    }, {
+      // shop 조인 결과(배열)를 낱개의 속성으로 변환한다.
+      $unwind: '$shop'
+    }, {
+      // epilogue 조인
+      $lookup: {
+        from: 'epilogue',
+        localField: '_id',
+        foreignField: 'couponId',
+        as: 'epilogueList'
+      }
+    },
+  ]).next();
+  return coupon;
+};
+
+
+3) 쿠폰 상세정보 출력
+
+<article class="detail" data-couponid="<%=coupon._id%>">
+  <h1><%=coupon.couponName%></h1>
+  <img class="list_img" src="/image/coupon/<%=coupon.image.main.file%>" alt="<%=coupon.image.main.desc%>">
+  <img class="detail_img" src="/image/coupon/<%=coupon.image.detail.file%>" alt="<%=coupon.image.detail.desc%>">
+  <section class="content">
+    <h1><%=coupon.couponName%></h1>
+    <p class="note">
+      <%=coupon.desc%>
+    </p>
+    <ul class="coupon_info">
+      <li class="cost">정상가격 : <del><%=coupon.primeCost%>원</del></li>
+      <li class="discount">할인가격 : <em><%=coupon.price%>원</em></li>
+      <li class="expire">유효기간 : <time datetime="<%=coupon.useDate.start%>"><%=coupon.useDate.start%></time> 부터 <time datetime="<%=coupon.useDate.finish%>"><%=coupon.useDate.finish%></time> 까지</li>
+    </ul>
+    <ul class="coupon_current">
+      <li class="remain">잔여수량 : <span><%=coupon.quantity-coupon.buyQuantity%>개</span></li>
+      <li class="term">판매기간 : <span><%=coupon.saleDate.finish%></span></li>
+    </ul>
+    <% if(coupon.quantity-coupon.buyQuantity > 0){ %>
+      <a href="/buy.html" class="buy">구매하기</a>
+    <% }else{ %>
+      <span class="soldout">매진</span>
+    <% } %>
+  </section>
+  <div class="coupon_tab">
+    <section class="gallery">
+      <h1 tabindex="0">갤러리</h1>
+      <div class="gallery_viewport">
+        <h1>동영상</h1>
+        <% if(coupon.video){ %>
+          <video src="/video/<%=coupon.video.src%>"
+                 controls preload="none" poster="/video/<%=coupon.video.poster%>"
+                 alt="<%=coupon.video.desc%>"></video>
+        <% }else{ %>
+          <img src="/image/no_video.jpg" alt="동영상 등록 안됨">
+        <% } %>
+      </div>
+      <article>
+        <h1>포토 리스트</h1>
+        <ul class="photo_list">
+          <% coupon.image.etc.forEach(function(etc){ %>
+            <li><a href="/image/coupon/<%=etc.file%>" title="<%=etc.desc%>"><img src="/image/coupon/<%=etc.file%>" alt="<%=etc.desc%>"></a></li>
+          <% }); %>
+        </ul>
+        <% if(coupon.image.etc.length > 0){ %>
+          <div class="big_photo">
+            <img src="/image/coupon/<%=coupon.image.etc[0].file%>" width="300" height="250" alt="<%=coupon.image.etc[0].desc%>">
+          </div>
+        <% } %>
+      </article>
+    </section>
+    <section class="reply tab_off">
+      <h1 tabindex="0">쿠폰 후기 및 평점</h1>
+      <ul class="reply_list">
+        <% coupon.epilogueList.forEach(function(epilogue){ %>                    
+          <li>
+            <article>
+              <span><%=toStar(epilogue.satisfaction)%></span>
+              <p><%=epilogue.content%></p>
+              <footer>
+                <img src="/image/member/<%=epilogue.writer%>" alt="<%=epilogue.writer%> 회원 프로필 사진"> <span><%=epilogue.writer%></span>
+                <time datetime="<%=epilogue.regDate%>"><%=epilogue.regDate%></time>
+              </footer>
+            </article>
+          </li>
+          <% }); %>
+      </ul>
+    </section>
+    <section class="map tab_off">
+      <h1 tabindex="0">찾아오시는 길</h1>
+      <div class="map_div">
+        <img src="/image/shop/<%=coupon.shop.image.map.file%>"
+             alt="<%=coupon.shop.image.map.desc%>">
+       </div>
+      <article class="shop">
+        <h1>
+          <span class="company_name"><%=coupon.shop.shopName%></span>
+        </h1>
+        <div>
+          <dl>
+            <dt>영업점 소개</dt>
+            <dd>
+              <img src="/image/shop/<%=coupon.shop.image.interior.file%>"
+                     alt="<%=coupon.shop.image.interior.desc%>">
+              <p class="company_desc"><%=coupon.shop.shopDesc%></p>
+            </dd>
+            <dt>찾아 오시는길</dt>
+            <dd>
+              <%=coupon.shop.directions%>
+            </dd>
+            <dt>영업시간</dt>
+            <dd><%=coupon.shop.officeHours.open%> ~ <%=coupon.shop.officeHours.close%></dd>
+            <dt>문의전화 / e-mail</dt>
+            <dd>
+              전화 : <a href="tel:<%=coupon.shop.tel%>"><%=coupon.shop.tel%></a>
+           / e-mail : <a href="mailto:<%=coupon.shop.email%>"><%=coupon.shop.email%></a>
+            </dd>
+          </dl>
+        </div>
+      </article>
+    </section>
+  </div>  
+  <button type="button" class="btn_add_cart">관심쿠폰등록</button>
+  <button type="button" class="btn_close_coupon_detail">쿠폰 상세 보기 닫기</button>
+</article>
+
+
+6.6 layout 작성
+• head.ejs 수정
+
+<meta charset="utf-8">
+<title><%= typeof title=='undefined' ? '오늘은 뭘파니?' : title %> : 멀팡</title>
+<meta name="description" content="멀티 캠퍼스 HTML5 강의용 데모 사이트">
+<meta name="keywords" content="html5,css3,svg">
+<link rel="shortcut icon" href="/image/favicon.ico">
+<link rel="stylesheet" media="all" type="text/css" href="/css/layout.css">
+<script src="/js/lib/jquery-1.12.4.min.js"></script>
+
+
+6.8 RESTFul url 설계
+
+2) router/index.js에 나머지 기능 url 처리하는 함수 추가
+
+// 근처 메뉴
+router.get('/location', async function(req, res, next){
+  res.render('location');
+});
+// 추천 메뉴
+router.get('/best', function(req, res, next){
+  res.render('best');
+});
+// top5 쿠폰 조회
+router.get('/topCoupon', async function(req, res, next){
+  res.json([]);
+});
+// 모두 메뉴
+router.get('/all', async function(req, res, next){
+  res.render('all');
+});
+// 쿠폰 남은 수량 조회
+router.get('/couponQuantity', async function(req, res, next){
+  res.end('success');
+});
+
+
+3) router/users.js에 회원 기능 url 처리하는 함수 추가
+
+// 회원 가입 화면
+router.get('/new', function(req, res, next) {
+  res.render('join');
+}); 
+// 프로필 이미지 업로드
+router.post('/profileUpload', function(req, res, next) {
+  res.end('tmpfile.png');   // 임시 파일명 응답
+});
+// 회원 가입 요청
+router.post('/new', async function(req, res, next) {
+  res.end('success');
+});
+// 간편 로그인
+router.post('/simpleLogin', async function(req, res, next) {
+  res.json({_id: 'uzoolove@gmail.com', profileImage: 'uzoolove@gmail.com'});
+});
+// 로그아웃
+router.get('/logout', function(req, res, next) {
+  res.redirect('/');
+});
+// 로그인 화면
+router.get('/login', function(req, res, next) {
+  res.render('login');
+});
+// 로그인
+router.post('/login', async function(req, res, next) {
+  res.redirect('/');
+});
+// 마이 페이지
+router.get('/', async function(req, res, next) {
+  res.render('mypage');
+});
+// 회원 정보 수정
+router.put('/', async function(req, res, next) {
+  res.end('success');
+});
+// 구매 후기 등록
+router.post('/epilogue', async function(req, res, next) {
+  res.end('success');
+});
+
