@@ -23,6 +23,22 @@ router.get('/coupons/:_id', async function(req, res, next) {
   res.render('detail', {coupon : coupon, toStar : MyUtil.toStar});
 });
 
+// 구매 화면
+router.get('/purchases/:_id', async function(req, res, next) {
+  const coupon = await model.buyCouponForm(req.params._id);
+  res.render('buy', {coupon : coupon});
+});
+
+// 구매하기
+router.post('/purchase', async function(req, res, next) {
+  try{
+    const purchaseId = await model.buyCoupon(req.body);
+    res.end(String(purchaseId));
+  }catch{
+    res.json({errors : {message: err.message}});
+  }
+});
+
 // get방식으로 main 페이지를 요청하면 해당페이지로 렌더링해라.
 router.get('/:page.html', function(req, res, next) {
   // today.html -> today.ejs
