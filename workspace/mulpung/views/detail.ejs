@@ -76,40 +76,51 @@
 				<h1 class="blind">쿠폰 상세 정보</h1>
 				<div class="coupon_list">
           <!-- 쿠폰 상세정보 출력 영역 -->
-          <article class="detail" data-couponid="coupon123">
-            <h1>디저트 마카롱</h1>
-            <img class="list_img" src="/image/coupon/coupon_16.jpg" alt="디저트 마카롱 메인 이미지">
+          <article class="detail" data-couponid="<%=coupon._id%>">
+            <h1><%=coupon.couponName%></h1>
+            <img class="list_img" src="/image/coupon/<%=coupon.image.main.file%>" alt="<%=coupon.image.main.desc%>">
             <img class="detail_img" 
-              src="/image/coupon/coupon_16_detail.jpg" 
-              alt="디저트 마카롱 상세 이미지">
+              src="/image/coupon/<%=coupon.image.detail.file%>" 
+              alt="<%=coupon.image.detail.desc%>">
             <section class="content">
 							<p class="note">
-                바삭하고 쫀득한 초코 마카롱과 망고 마카롱 사이에 새콤달콤한 패션망고크림과 상큼한 요거생크림, 신선한 과일을 담아낸 디저트
+                <%=coupon.desc%>
 							</p>
               <ul class="coupon_info">
-                <li class="cost">정상가격 : <del>5500원</del></li>
-                <li class="discount">할인가격 : <em>4700원</em></li>
+                <li class="cost">정상가격 : <del><%=coupon.primeCost%>원</del></li>
+                <li class="discount">할인가격 : <em><%=coupon.price%>원</em></li>
                 <li class="expire">유효기간 : 
-                  <time datetime="2099-01-01">2099-01-01</time> ~
-                  <time datetime="2099-12-31">2099-12-31</time>
+                  <time datetime="2099-01-01"><%=coupon.useDate.start%></time> ~
+                  <time datetime="2099-12-31"><%=coupon.useDate.finish%></time>
                 </li>
               </ul>
               <ul class="coupon_current">
-                <li class="remain">잔여수량<span>0개</span></li>
+                <li class="remain">잔여수량<span><%=coupon.quantity-coupon.buyQuantity%>개</span></li>
                 <li class="term">판매기간 : 
-                  <time datetime="2099-01-01">2099-01-01</time> ~
-                  <time datetime="2099-12-31">2099-12-31</time>
+                  <time datetime="2099-01-01"><%=coupon.saleDate.start%></time> ~
+                  <time datetime="2099-12-31"><%=coupon.saleDate.finish%></time>
                 </li>
               </ul>
-              <!-- <a href="/buy.html" class="buy">구매하기</a> -->
-							<span class="soldout">매진</span>
+              <% if(coupon.quantity > coupon.buyQuantity){ %>
+                <a href="/buy.html" class="buy">구매하기</a>
+              <% }else{ %>
+                <span class="soldout">매진</span>
+              <% } %>
             </section>
             <div class="coupon_tab">
 							<section class="gallery">
 								<h1 tabindex="0">갤러리</h1>
 								<div class="gallery_viewport">
 									<h1>동영상</h1>
-                  <img src="/image/no_video.jpg" alt="동영상 등록 안됨">
+                    <% if(coupon.video){ %>
+                      <video src="/video/<%=coupon.video.src%>" 
+                        controls  
+                        preload="none"  
+                        poster="/video/<%=coupon.video.poster%>" 
+                        alt="<%=coupon.video.desc%>"></video>
+                    <% }else{ %>
+                      <img src="/image/no_video.jpg" alt="동영상 등록 안됨">
+                    <% } %>
 								</div>
 								<article>
 									<h1>포토 리스트</h1>
