@@ -39,6 +39,27 @@ router.post('/purchase', async function(req, res, next) {
   }
 });
 
+// 근처 메뉴
+router.get('/location', async function(req, res, next){
+  res.render('location');
+});
+// 추천 메뉴
+router.get('/best', function(req, res, next){
+  res.render('best');
+});
+// top5 쿠폰 조회
+router.get('/topCoupon', async function(req, res, next){
+  res.json([]);
+});
+// 모두 메뉴
+router.get('/all', async function(req, res, next){
+  res.render('all');
+});
+// 쿠폰 남은 수량 조회
+router.get('/couponQuantity', async function(req, res, next){
+  res.end('success');
+});
+
 // get방식으로 main 페이지를 요청하면 해당페이지로 렌더링해라.
 router.get('/:page.html', function(req, res, next) {
   // today.html -> today.ejs
