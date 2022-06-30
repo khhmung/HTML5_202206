@@ -79,6 +79,13 @@ common.cart.showNoti = function(noti){
 common.upload.profileImage = function(){
 	// 파일을 선택한 후에 파일 선택을 취소했을 경우
 	if(this.files.length == 0) return;
+
+  // 10MB 보다 크면
+  if(this.files[0].size > 1024*1024*10){
+    alert('프로필 이미지는 최대 10MB까지 가능합니다. \n 선택한 이미지 크기: '
+          +Math.round(this.files[0].size/1024/1024) + 'MB');
+    return;
+  }
 	
 	var progress = $('.form_section > form progress');
 	

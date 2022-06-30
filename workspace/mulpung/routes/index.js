@@ -84,7 +84,7 @@ router.get('/couponQuantity', async function(req, res, next){
   res.contentType('text/event-stream');
   res.write(`data: ${JSON.stringify(list)}\n`);
   res.write(`retry: ${1000*10}\n`);
-  res.end('\n');
+  res.end('\n');  // 마지막에 한줄은 빈줄로 넘겨줘야지 브라우저에서 인식한다.
 });
 
 // get방식으로 main 페이지를 요청하면 해당페이지로 렌더링해라.
