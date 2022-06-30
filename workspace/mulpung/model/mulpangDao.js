@@ -9,6 +9,7 @@ var MyUtil = require('../utils/myutil');
 // DB 접속
 var db;
 const { MongoClient, ObjectId, ObjectID } = require('mongodb');
+const { now } = require('moment');
 const url = 'mongodb://localhost:27017';
 const client = new MongoClient(url);
 
@@ -28,19 +29,46 @@ main()
   .catch(console.error);
 
 // 쿠폰 목록조회
-module.exports.couponList = async function(){
+module.exports.couponList = async function(qs){
+  // 넘어오는 값 예시
+  // http://localhost/all?date=buyable&location=%EA%B0%95%EB%82%A8&keyword=&order=saleDate.start#
+  qs = qs || {};
 	// 검색 조건
 	var query = {};
 	// 1. 판매 시작일이 지난 쿠폰, 구매 가능 쿠폰(기본 검색조건)	
+  var now = moment().format('YYYY-MM-DD');
+  query['saleDate.start'] = {$lte : now};   // less than equal
+  query['saleDate.finish'] = {$gte : now};  // great than equal
 	// 2. 전체/구매가능/지난쿠폰
-	// 3. 지역명	
+  switch(qs.date){
+    case 'all':
+      delete query['saleDate.finish'];
+      break;
+    case 'past': 
+      query['saleDate.finish'] = {$lt : now}; // less than (미만)
+      break;
+  }
+	// 3. 지역명
+  if(qs.location){
+    query['region'] = qs.location;
+  }
 	// 4. 검색어	
-
+  var keyword = qs.keyword;
+  if(keyword && keyword.trim() != ''){
+    var regExp = new RegExp(keyword , 'i'); // 정규식 i 의 역할 : 대소문자 구분 X
+    query['$or'] = [{couponName : regExp}, {desc : regExp}];  // 쿠폰명과 설명만 OR 조건으로 검색
+  }
 	// 정렬 옵션
 	var orderBy = {};
 	// 1. 사용자 지정 정렬 옵션	
+  var orderCondtion = qs.order;
+  if(orderCondtion){
+    orderBy[orderCondtion] = -1; // 내림차순
+  }
 	// 2. 판매 시작일 내림차순(최근 쿠폰)	
+  orderBy['saleDate.start'] = -1;
 	// 3. 판매 종료일 오름차순(종료 임박 쿠폰)
+  orderBy['saleDate.finish'] = 1;
 
 	// 출력할 속성 목록
 	var fields = {
@@ -58,14 +86,14 @@ module.exports.couponList = async function(){
 	
 	// TODO 쿠폰 목록을 조회한다.
   const count = 0;
-  const result = await db.coupon.find(query).project(fields).limit(count).toArray();
+  const result = await db.coupon.find(query).project(fields).limit(count).sort(orderBy).toArray();
   console.log(result.length + '건 조회');
 	
   return result;
 };
 
 // 쿠폰 상세 조회
-module.exports.couponDetail = async function(_id){
+module.exports.couponDetail = async function(_id, io){
 	// coupon, shop, epilogue 조인
 	var coupon = await db.coupon.aggregate([{
     $match : {
@@ -94,11 +122,12 @@ module.exports.couponDetail = async function(_id){
 
   }]).next();
   // console.log(coupon);
-  return coupon;
 	// 뷰 카운트를 하나 증가시킨다.
-	
+	await db.coupon.updateOne({_id: coupon._id}, {$inc: {viewCount: 1}});
 	// 웹소켓으로 수정된 조회수 top5를 전송한다.
+  io.emit('top5', await topCoupon('viewCount'));
 	
+  return coupon;
 };
 
 // 구매 화면에 보여줄 쿠폰 정보 조회
@@ -148,7 +177,25 @@ module.exports.buyCoupon = async function(params){
 	
 // 추천 쿠폰 조회
 var topCoupon = module.exports.topCoupon = async function(condition){
-	
+  var order = {};
+  var query = {}; // 검색 조건
+	// 1. 판매 시작일이 지난 쿠폰, 구매 가능 쿠폰(기본 검색조건)	
+  var now = moment().format('YYYY-MM-DD');
+  query['saleDate.start'] = {$lte : now};   // less than equal
+  query['saleDate.finish'] = {$gte : now};  // great than equal
+
+  order[condition] = -1;
+  var list = await db.coupon.aggregate([
+    { $match: query }, 
+    { $sort : order }, 
+    { $limit : 5},
+    { $project : {
+        couponName: 1, 
+        value: '$'+condition
+      } 
+    }
+  ]).toArray();
+  return list;
 };
 
 // 지정한 쿠폰 아이디 목록을 받아서 남은 수량을 넘겨준다.

@@ -88,3 +88,8 @@ function onListening() {
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
 }
+
+// socket.io 서버 구동
+// 웹서버와 동일한 포트로 지정 > 회사 외부망에선 다른 포트로 했을 때 막힐 확률이 높기 때문
+var socketio = require('socket.io')(server);
+app.set('io', socketio);

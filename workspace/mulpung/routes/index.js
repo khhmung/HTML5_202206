@@ -13,13 +13,14 @@ router.get('/', function(req, res, next) {
 
 // 오늘 메뉴
 router.get('/today', async function(req, res, next) {
-  const list = await model.couponList();
+  const list = await model.couponList(req.query);
   res.render('today', {list : list});
 });
 
 // 쿠폰 상세조회
 router.get('/coupons/:_id', async function(req, res, next) {
-  const coupon = await model.couponDetail(req.params._id);
+  var io = req.app.get('io');
+  const coupon = await model.couponDetail(req.params._id, io);
   res.render('detail', {coupon : coupon, toStar : MyUtil.toStar});
 });
 
@@ -49,14 +50,19 @@ router.get('/location', async function(req, res, next){
 router.get('/best', function(req, res, next){
   res.render('best');
 });
+
 // top5 쿠폰 조회
 router.get('/topCoupon', async function(req, res, next){
-  res.json([]);
+  var list = await model.topCoupon(req.query.condition);
+  res.json(list);
 });
+
 // 모두 메뉴
 router.get('/all', async function(req, res, next){
+  var list = await model.couponList(req.query);
   res.render('all');
 });
+
 // 쿠폰 남은 수량 조회
 router.get('/couponQuantity', async function(req, res, next){
   res.end('success');
