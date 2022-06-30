@@ -20,6 +20,7 @@ async function registMember(event){
     }else{
       // TODO 가입 결과 출력
       alert(result + '님 회원가입이 완료되었습니다. :D');
+      location.href = '/';
     }
 	}
 }
