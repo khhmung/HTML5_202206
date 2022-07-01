@@ -38,6 +38,7 @@ router.post('/simpleLogin', async function(req, res, next) {
 
 // 로그아웃
 router.get('/logout', function(req, res, next) {
+  req.session.destroy(); // 세션 객체 제거
   res.redirect('/');
 });
 

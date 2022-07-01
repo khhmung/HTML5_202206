@@ -4,6 +4,7 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var session = require('express-session');
+var nocache = require('nocache'); 
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -35,6 +36,7 @@ app.use(/^((?!\/couponQuantity).)*$/, session({
   next();
 });
 
+app.use(nocache());     // 로그아웃 후, 이전버튼 눌렀을 때 다시 로그인 된것처럼 된 현상 없애는 역할
 app.use(logger('dev')); // 동적인 파일만 로그에 찍히도록 한다.
 
 app.use('/', indexRouter); // public 에서 못찾았으면 / 에서 찾아라!
