@@ -1,0 +1,167 @@
+﻿15.1 회원 정보 조회
+2) dao 작성
+• getMember() 작성
+
+module.exports.getMember = async function(userid){
+	var result = await db.purchase.aggregate([
+    {$match: {email: userid}},
+    {$lookup: {
+        from: 'coupon',
+        localField: 'couponId',
+        foreignField: '_id',
+        as: 'coupon'
+    }},
+    {$unwind: '$coupon'},
+    {$lookup: {
+        from: 'epilogue',
+        localField: 'epilogueId',
+        foreignField: '_id',
+        as: 'epilogue'
+    }},
+    {$unwind: {
+        path: '$epilogue',
+        preserveNullAndEmptyArrays: true
+    }},
+    {$project: {
+        _id: 1,
+        couponId: 1, 
+        regDate: 1,
+        'coupon.couponName': 1,
+        'coupon.image.main': 1,
+        epilogue: 1
+    }},
+    {$sort: {regDate: -1}}
+  ]).toArray();
+  return result;
+};
+
+
+3) ejs 작성
+• mypage.ejs 작성
+
+<section class="form_section">
+  <h1>회원 수정</h1>
+  <form>
+    <input type="hidden" name="tmpFileName">
+    <img src="/image/member/<%=user.profileImage%>" alt="<%=user._id%> 회원 프로필 이미지">
+    <table>
+      <tr>
+        <th>이메일</th>
+        <td><%=user._id%></td>
+      </tr>      
+      <tr>
+        <th><label for="profile">프로필 이미지</label></th>
+        <td>
+          <input type="file" accept="image/*" id="profile">
+          <progress>0%</progress>
+        </td>
+      </tr>
+      <tr>
+        <th><label for="password_old">비밀번호</label></th>
+        <td><input type="password" id="password_old" name="oldPassword" required></td>
+      </tr>
+      <tr>
+        <th><label for="password">새 비밀번호</label></th>
+        <td><input type="password" id="password" name="password"></td>
+      </tr>
+      <tr>
+        <th><label for="password2">새 비밀번호확인</label></th>
+        <td><input type="password" id="password2"></td>
+      </tr>
+    </table>
+    <div class="btn_div"><button type="submit">정보 수정</button></div>
+  </form>
+</section>
+<section id="my_coupon_section">
+  <h1>내가 구매한 쿠폰 리스트</h1>    
+  <!-- 구매한 쿠폰 목록 출력 영역 -->
+  <% purchases.forEach(function(item, i){ %>
+    <article class="coupon_preview">
+      <h1><%=item.coupon.couponName%></h1>
+      <a href="/coupons/<%=item.couponId%>">
+        <img class="coupon_list_image" src="/image/coupon/<%=item.coupon.image.main.file%>" alt="<%=item.coupon.image.main.desc%>">
+      </a>
+      <time datetime="<%=item.regDate%>"><%=item.regDate%></time>
+
+      <% if(item.epilogue){ %>
+        <p><%=item.epilogue.content%></p>
+        <p><%=toStar(item.epilogue.satisfaction)%></p>
+      <% }else{ %>
+        <form>
+          <input type="hidden" name="couponId" value="<%=item.couponId%>">
+          <input type="hidden" name="purchaseId" value="<%=item._id%>">
+          평가: <input name="satisfaction" type="range" min="1" max="5" value="5" step="0.5" oninput="output.value=this.value"><output name="output">5</output>
+          <textarea name="content" rows="4" cols="25" required placeholder="후기를 입력하세요."></textarea><br>
+          <input type="submit" value="작성">
+        </form>
+      <% } %>
+
+    </article>              
+  <% }); %>
+</section>
+
+
+15.2 회원 정보 수정
+3) dao 작성
+• updateMember() 작성
+
+module.exports.updateMember = async function(userid, params){
+	var oldPassword = params.oldPassword;
+  // 이전 비밀번호로 회원 정보를 조회한다.
+  try{
+    var member = await db.member.findOne({_id: userid, password: oldPassword});
+  }catch(err){
+    console.error(err);
+    throw new Error('작업 처리에 실패했습니다. 잠시후 다시 시도하시기 바랍니다.');
+  }  
+  
+  if(!member){
+    throw new Error('이전 비밀번호가 맞지 않습니다.');
+  }else{
+    // 프로필 이미지를 수정할 경우
+    if(params.tmpFileName){
+      saveImage(params.tmpFileName, member.profileImage);  
+    }
+    // 비밀번호 수정일 경우
+    if(params.password.trim() != ''){
+      await db.member.updateOne({_id: userid}, {$set: {password: params.password}});
+    }
+  }
+  return member;
+};
+
+
+15.3 쿠폰 후기 등록
+3) dao 작성
+• insertEpilogue 작성
+
+module.exports.insertEpilogue = async function(userid, params){
+	var purchaseId = ObjectId(params.purchaseId);
+  delete params.purchaseId;
+  var epilogue = params;
+  epilogue._id = ObjectId();
+  epilogue.regDate = moment().format('YYYY-MM-DD hh:mm:ss');
+  epilogue.couponId = ObjectId(params.couponId);
+  epilogue.writer = userid;
+
+  try{
+    // 후기를 등록한다.
+    var epilogueResult = await db.epilogue.insertOne(epilogue);
+    // 구매 컬렉션에 후기 아이디를 추가한다.
+    await db.purchase.updateOne({_id: purchaseId}, {$set: {epilogueId: epilogue._id}});    
+    // 쿠폰 컬렉션의 후기 수와 만족도 평균을 업데이트 한다.
+    var coupon = await db.coupon.findOne({_id: epilogue.couponId});
+    
+    var update = {
+      $inc: {epilogueCount: 1},
+      $set: {satisfactionAvg: (coupon.satisfactionAvg * coupon.epilogueCount + parseInt(epilogue.satisfaction)) / (coupon.epilogueCount+1)}
+    };
+    await db.coupon.updateOne({_id: epilogue.couponId}, update);
+    
+    return epilogueResult.insertedId;
+  }catch(err){
+    console.error(err);
+    throw new Error('작업 처리에 실패했습니다. 잠시후 다시 시도하시기 바랍니다.');
+  }
+};
+

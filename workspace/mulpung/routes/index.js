@@ -57,7 +57,7 @@ router.post('/purchase', checkLogin, async function(req, res, next) {
   try{
     // var user = req.session.user;
     // if(user){
-      req.body.email = user._id;  // email 정보 전달
+      req.body.email = req.session.user._id;  // email 정보 전달
       const purchaseId = await model.buyCoupon(req.body);
       res.end(String(purchaseId));
     // } else {

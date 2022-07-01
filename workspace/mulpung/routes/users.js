@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var model = require('../model/mulpangDao');
+const MyUtil = require('../utils/myutil');
 const checkLogin = require('../middleware/checklogin');
 
 // 회원 가입 화면
@@ -61,7 +62,9 @@ router.post('/login', async function(req, res, next) {
 
 // 마이 페이지
 router.get('/', checkLogin, async function(req, res, next) {
-  res.render('mypage');
+  var userId = req.session.userId;
+  var list  = await model.getMember(userId);
+  res.render('mypage', {purchases: list, toStar: MyUtil.toStar});
 });
 
 // 회원 정보 수정
