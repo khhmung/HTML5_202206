@@ -41,8 +41,14 @@ router.get('/coupons/:_id', async function(req, res, next) {
 
 // 구매 화면
 router.get('/purchases/:_id', async function(req, res, next) {
-  const coupon = await model.buyCouponForm(req.params._id);
-  res.render('buy', {coupon : coupon});
+  var user = req.session.user;
+  if(user){
+    const coupon = await model.buyCouponForm(req.params._id);
+    res.render('buy', {coupon : coupon});
+  } else {
+    req.session.backurl = req.originalUrl;  // 구매하기/상품id url 저장. 다시 돌아갈 페이지를 저장해둠.
+    res.redirect('/users/login');
+  }
 });
 
 // 구매하기

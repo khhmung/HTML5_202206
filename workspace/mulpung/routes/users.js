@@ -46,10 +46,18 @@ router.get('/logout', function(req, res, next) {
 router.get('/login', function(req, res, next) {
   res.render('login');
 });
+
 // 로그인
 router.post('/login', async function(req, res, next) {
-  res.redirect('/');
+  try{
+    const user = await model.login(req.body);
+    req.session.user = user;
+    res.redirect(req.session.backurl || '/');   // 이전 유효성 체크했던 페이지(구매하기/상품)로 이동
+  }catch(err){
+    res.render('login', {errors: {message: err.message}});
+  }
 });
+
 // 마이 페이지
 router.get('/', async function(req, res, next) {
   res.render('mypage');
