@@ -83,7 +83,7 @@ router.post('/epilogue', checkLogin, async function(req, res, next) {
   var userId = req.session.user._id;
   try{
     var epilogueId = await model.insertEpilogue(userId, req.body);
-    res.end(epilogueId);
+    res.end(String(epilogueId));
   }catch{
     res.json({errors : {message: err.message}});
   }

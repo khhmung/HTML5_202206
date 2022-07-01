@@ -344,7 +344,7 @@ module.exports.insertEpilogue = async function(userId, params){
     _id : ObjectId(), // id 알아서 생성
     couponId : ObjectId(params.couponId),
     writer : userId,
-    satisfaction : params.satisfaction ,
+    satisfaction : parseInt(params.satisfaction) ,
     content : params.content,
     regDate : moment().format('YYYY-MM-DD hh:mm:ss')
   }
@@ -357,12 +357,12 @@ module.exports.insertEpilogue = async function(userId, params){
     var coupon = await db.coupon.findOne({_id: epilogue.couponId});
     var update = {
       $inc: {epilogueCount : 1},
-      $set: {satisfactionAvg : (coupon.satisfactionAvg * coupon.epilogueCount + parseInt(epilogue.satisfaction)/coupon.epilogueCount+1)}
+      $set: {satisfactionAvg : (coupon.satisfactionAvg * coupon.epilogueCount + parseFloat(epilogue.satisfaction)/coupon.epilogueCount+1)}
                                 // (쿠폰만족도 평균 x 후기 등록수 + 후기 만족도점수) / 후기등록수 + 1
     };
     await db.purchase.updateOne({_id: epilogue.couponId}, update);
     return epilogueResult.insertId;
-    
+
   } catch (err) {
     console.error(err);
     throw new Error('작업 처리에 실패했습니다. 잠시후 다시 시도하시기 바랍니다.');
