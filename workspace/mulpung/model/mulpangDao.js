@@ -5,6 +5,7 @@ var path = require('path');
 var fs = require('fs');
 var moment = require('moment');
 var MyUtil = require('../utils/myutil');
+var MyError = require('../errors');
 
 // DB 접속
 var db;
@@ -180,7 +181,8 @@ module.exports.buyCoupon = async function(params){
   
   }catch(err){
     console.error(err);
-    throw new Error('쿠폰 구매에 실패했습니다. 잠시후 다시 시도하시기 바랍니다.');
+    // throw new Error('쿠폰 구매에 실패했습니다. 잠시후 다시 시도하시기 바랍니다.');
+    throw MyError.FAIL;
   }
   
 };	
@@ -247,9 +249,11 @@ module.exports.registMember = async function(params){
   } catch (err) {
     console.log(err);
     if(err.code == 11000){ // _id 값이 중복된 경우
-      throw new Error('이미 등록된 이메일입니다.');
+      // throw new Error('이미 등록된 이메일입니다.');
+      throw MyError.USER_DUPLICATE;
     }else{
-      throw new Error('작업 처리에 실패했습니다. 잠시후 다시 시도해주시기 바랍니다.');
+      // throw new Error('작업 처리에 실패했습니다. 잠시후 다시 시도해주시기 바랍니다.');
+      throw MyError.FAIL;
     }
   }
 
@@ -262,14 +266,17 @@ module.exports.login = async function(params){
     var result = await db.member.findOne({_id: params._id}, {projection: {profileImage: 1, password : 1}});
   } catch (err) {
     console.error(err);
-    throw new Error('작업처리에 실패했습니다. 잠시후 다시 시도하시기 바랍니다.');
+    // throw new Error('작업처리에 실패했습니다. 잠시후 다시 시도하시기 바랍니다.');
+    throw MyError.FAIL;
   }
 
   if(!result){
-    throw new Error('아이디가 존재하지 않습니다.');
+    // throw new Error('아이디가 존재하지 않습니다.');
+    throw MyError.LOGIN_FAIL;
   } else {
     if(params.password != result.password){
-      throw new Error('비밀번호를 확인하세요.');
+      // throw new Error('비밀번호를 확인하세요.');
+      throw MyError.PASSWORD_INCRRECT;
     }
   }      
   delete result.password;
@@ -319,7 +326,8 @@ module.exports.updateMember = async function(userId, params){
     var member = await db.member.findOne({_id: userId, password: oldPassword});
   }catch(err){
     console.error(err);
-    throw new Error('작업 처리에 실패했습니다. 잠시후 다시 시도하시기 바랍니다.');
+    throw MyError.FAIL;
+    // throw new Error('작업 처리에 실패했습니다. 잠시후 다시 시도하시기 바랍니다.');
   }  
   
   if(member){ // 프로필 이미지를 수정할 경우
@@ -331,7 +339,8 @@ module.exports.updateMember = async function(userId, params){
     }
   } else { 
     if(!member){
-      throw new Error('이전 비밀번호가 맞지 않습니다.');
+      throw MyError.PASSWORD_INCRRECT;
+      // throw new Error('이전 비밀번호가 맞지 않습니다.');
     }
   }
 return member;
@@ -365,6 +374,7 @@ module.exports.insertEpilogue = async function(userId, params){
 
   } catch (err) {
     console.error(err);
-    throw new Error('작업 처리에 실패했습니다. 잠시후 다시 시도하시기 바랍니다.');
+    throw MyError.FAIL;
+    // throw new Error('작업 처리에 실패했습니다. 잠시후 다시 시도하시기 바랍니다.');
   }
 };

@@ -23,7 +23,7 @@ router.post('/new', async function(req, res, next) {
     const email = await model.registMember(req.body);
     res.end(String(email));
   }catch{
-    res.json({errors : {message: err.message}});
+     next(err);
   }
 });
 
@@ -34,7 +34,7 @@ router.post('/simpleLogin', async function(req, res, next) {
     req.session.user = user;
     res.json(user);
   }catch{
-    res.json({errors : {message: err.message}});
+     next(err);
   }
 });
 
@@ -74,7 +74,7 @@ router.put('/', checkLogin, async function(req, res, next) {
     await model.updateMember(userId, req.body);
     res.end('success');
   }catch{
-    res.json({errors : {message: err.message}});
+     next(err);
   }
 });
 
@@ -85,7 +85,7 @@ router.post('/epilogue', checkLogin, async function(req, res, next) {
     var epilogueId = await model.insertEpilogue(userId, req.body);
     res.end(String(epilogueId));
   }catch{
-    res.json({errors : {message: err.message}});
+     next(err);
   }
 });
 
