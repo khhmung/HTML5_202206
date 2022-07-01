@@ -62,18 +62,31 @@ router.post('/login', async function(req, res, next) {
 
 // 마이 페이지
 router.get('/', checkLogin, async function(req, res, next) {
-  var userId = req.session.userId;
+  var userId = req.session.user._id;
   var list  = await model.getMember(userId);
   res.render('mypage', {purchases: list, toStar: MyUtil.toStar});
 });
 
 // 회원 정보 수정
 router.put('/', checkLogin, async function(req, res, next) {
-  res.end('success');
+  var userId = req.session.user._id;
+  try{
+    await model.updateMember(userId, req.body);
+    res.end('success');
+  }catch{
+    res.json({errors : {message: err.message}});
+  }
 });
+
 // 구매 후기 등록
 router.post('/epilogue', checkLogin, async function(req, res, next) {
-  res.end('success');
+  var userId = req.session.user._id;
+  try{
+    var epilogueId = await model.insertEpilogue(userId, req.body);
+    res.end(epilogueId);
+  }catch{
+    res.json({errors : {message: err.message}});
+  }
 });
 
 module.exports = router;

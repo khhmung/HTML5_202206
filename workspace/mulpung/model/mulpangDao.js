@@ -311,11 +311,60 @@ module.exports.getMember = async function(userid){
 };
 
 // 회원 정보 수정
-module.exports.updateMember = async function(userid, params){
-	
+module.exports.updateMember = async function(userId, params){
+	var oldPassword = params.oldPassword;
+  
+  try{
+    // 이전 비밀번호로 회원 정보를 조회한다.
+    var member = await db.member.findOne({_id: userId, password: oldPassword});
+  }catch(err){
+    console.error(err);
+    throw new Error('작업 처리에 실패했습니다. 잠시후 다시 시도하시기 바랍니다.');
+  }  
+  
+  if(member){ // 프로필 이미지를 수정할 경우
+    if(params.tmpFileName){
+      saveImage(params.tmpFileName, member.profileImage);  
+    }
+    if(params.password.trim() != ''){ // 비밀번호 수정일 경우
+      await db.member.updateOne({_id: userId}, {$set: {password: params.password}});
+    }
+  } else { 
+    if(!member){
+      throw new Error('이전 비밀번호가 맞지 않습니다.');
+    }
+  }
+return member;
 };
 
 // 쿠폰 후기 등록
-module.exports.insertEpilogue = async function(userid, params){
-	
+module.exports.insertEpilogue = async function(userId, params){
+  var purchaseId = ObjectId(params.purchaseId);
+	var epilogue = {
+    _id : ObjectId(), // id 알아서 생성
+    couponId : ObjectId(params.couponId),
+    writer : userId,
+    satisfaction : params.satisfaction ,
+    content : params.content,
+    regDate : moment().format('YYYY-MM-DD hh:mm:ss')
+  }
+  try {
+    // 후기를 등록한다.
+    var epilogueResult = await db.epilogue.insertOne(epilogue);
+    // 구매 컬렉션에 후기ID 를 등록한다.
+    await db.purchase.updateOne({_id: purchaseId}, {$set: {epilogueId: epilogue._id}});
+    // 구매컬랙션에 후기수와 만족도 평균 업데이트
+    var coupon = await db.coupon.findOne({_id: epilogue.couponId});
+    var update = {
+      $inc: {epilogueCount : 1},
+      $set: {satisfactionAvg : (coupon.satisfactionAvg * coupon.epilogueCount + parseInt(epilogue.satisfaction)/coupon.epilogueCount+1)}
+                                // (쿠폰만족도 평균 x 후기 등록수 + 후기 만족도점수) / 후기등록수 + 1
+    };
+    await db.purchase.updateOne({_id: epilogue.couponId}, update);
+    return epilogueResult.insertId;
+    
+  } catch (err) {
+    console.error(err);
+    throw new Error('작업 처리에 실패했습니다. 잠시후 다시 시도하시기 바랍니다.');
+  }
 };
