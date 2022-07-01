@@ -15,6 +15,19 @@ var app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
+app.use('/today', function(req, res, next){
+  // 미들웨어 만드는 방법
+  // 1. req, res, next 를 매개변수로 정의
+  // 2. 기능 구현
+  // 3-1. 클라이언트에 응답(res.json(), res.end(), res.render(), res.redirect()...)
+  // 3-2. 다음 등록된 미들웨어를 호출 (next())
+  console.log('1. req.body=>' , req.body);
+  console.log('1. req.query=>' , req.query);
+  console.log('1. req.cookies=>', req.cookies);
+  console.log('1. req.session=>', req.session);
+  next();
+});
+
 // app.use(미들웨어);
 // 순서대로 처리한다.
 // app.use(logger('dev'));  // 로그를 제일 먼저 놓게 되면 정적인 파일 가져오는 것도 찍히기 때문에 불필요한 내용도 찍힌다.
@@ -33,6 +46,19 @@ app.use(/^((?!\/couponQuantity).)*$/, session({
 }), function(req, res, next){
   // ejs 렌더링에 사용할 변수 지정
   res.locals.user = req.session.user;
+  next();
+});
+
+app.use('/today', function(req, res, next){
+  // 미들웨어 만드는 방법
+  // 1. req, res, next 를 매개변수로 정의
+  // 2. 기능 구현
+  // 3-1. 클라이언트에 응답(res.json(), res.end(), res.render(), res.redirect()...)
+  // 3-2. 다음 등록된 미들웨어를 호출 (next())
+  console.log('2. req.body=>' , req.body);
+  console.log('2. req.query=>' , req.query);
+  console.log('2. req.cookies=>', req.cookies);
+  console.log('2. req.session=>', req.session);
   next();
 });
 

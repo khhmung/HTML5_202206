@@ -9,8 +9,13 @@ const mime = require('mime'); // 외부 라이브러리 npm 설치
 const home = path.join(__dirname, 'design');
 
 var server = http.createServer(function(req, res){
+  
   console.log(req.method, req.url, req.httpVersion);
-  // console.log(req.headers);
+  console.log(req.headers);
+  console.log('server> req.body=>' , req.body);
+  console.log('server> req.query=>' , req.query);
+  console.log('server> req.cookies=>', req.cookies);
+  console.log('server> req.session=>', req.session);
 
   var fileName = req.url;
   // var mimeType = myMime.getMime(fileName);s

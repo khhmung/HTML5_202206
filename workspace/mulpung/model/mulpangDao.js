@@ -157,7 +157,8 @@ module.exports.buyCoupon = async function(params){
 	// 구매 컬렉션에 저장할 형태의 데이터를 만든다.
 	var document = {
 		couponId: ObjectId(params.couponId),
-		email: 'uzoolove@gmail.com',	// 나중에 로그인한 id로 대체
+		// email: 'uzoolove@gmail.com',	// 나중에 로그인한 id로 대체
+		email: params.email,	// 나중에 로그인한 id로 대체
 		quantity: parseInt(params.quantity),
 		paymentInfo: {
 			cardType: params.cardType,
